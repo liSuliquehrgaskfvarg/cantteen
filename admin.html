@@ -173,12 +173,15 @@ async function saveSettings(){
     deadlineTime:document.getElementById('s-deadlineTime').value,
     note:document.getElementById('s-note').value.trim()
   };
+  // Save locally first — always succeeds
+  saveLocalSettings(settings);
+  settingsSaved=true;
+  showMsg('settings-msg','✅ 設定已儲存','ok');
+  // Try syncing to API in background (ignore errors)
   try{
     const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(settings)});
-    const r=await resp.json();
-    if(r.error)showMsg('settings-msg',r.error,'err');
-    else{showMsg('settings-msg','✅ 設定已儲存','ok');settingsSaved=true;saveLocalSettings(settings);}
-  }catch(e){showMsg('settings-msg','儲存失敗','err');}
+    await resp.json();
+  }catch(e){}
   finally{btn.disabled=false;btn.textContent='💾 儲存設定';}
 }
 
