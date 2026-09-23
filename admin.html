@@ -24,8 +24,8 @@ h2{font-size:1rem;font-weight:700;color:#374151;margin-bottom:12px}
 .day-hdr{background:#dbeafe;padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
 .day-hdr-title{color:#1e40af;font-weight:700;font-size:.9rem}
 .day-hdr-count{font-size:.78rem;color:#3b82f6;font-weight:600}
-.day-grid{padding:10px 10px 12px;display:flex;flex-wrap:wrap;gap:5px}
-.seat{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;font-size:.78rem;font-weight:700;border:1.5px solid #e5e7eb;color:#6b7280;background:#f9fafb}
+.day-grid{padding:8px 6px 10px;display:grid;grid-template-columns:repeat(17,1fr);gap:3px}
+.seat{display:flex;align-items:center;justify-content:center;height:26px;border-radius:4px;font-size:9.5px;font-weight:700;border:1px solid #e5e7eb;color:#6b7280;background:#f9fafb}
 .seat.ordered{background:#f97316;border-color:#ea6c00;color:#fff}
 .day-closed{padding:10px 14px;font-size:.82rem;color:#9ca3af;font-style:italic}
 /* Settings */
@@ -148,6 +148,7 @@ function renderSummary(){
       html+=`<div class="day-closed">🔒 點餐已截止</div>`;
     } else {
       html+=`<div class="day-grid">`;
+      html+=`<div class="seat">師</div>`;
       for(let s=1;s<=classSize;s++){
         const isOrdered=submitted.has(s);
         html+=`<div class="seat${isOrdered?' ordered':''}">${String(s).padStart(2,'0')}</div>`;
