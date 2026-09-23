@@ -117,7 +117,7 @@ async function loadData(){
     if(src.deadlineTime) document.getElementById('s-deadlineTime').value=src.deadlineTime;
     if(src.note!==undefined) document.getElementById('s-note').value=src.note;
     settingsSaved=false;
-  }catch(e){showMsg('status-msg','載入失敗，請檢查網路','err');}
+  }catch(e){showMsg('status-msg','錯誤：'+e.message,'err');console.error(e);}
   finally{document.getElementById('btn-refresh').disabled=false;}
 }
 
