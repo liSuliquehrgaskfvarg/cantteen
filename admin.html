@@ -110,7 +110,7 @@ async function loadData(){
   document.getElementById('summary').style.display='none';
   try{
     // Load with seatNo=1 to get week-level aggregate data
-    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'submitOrder',seatNo:1})});
+    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitOrder',seatNo:1})});
     weekData=await resp.json();
     if(weekData.error){showMsg('status-msg',weekData.error,'err');return;}
     showMsg('status-msg','');
@@ -162,7 +162,7 @@ async function saveSettings(){
     note:document.getElementById('s-note').value.trim()
   };
   try{
-    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});
+    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(settings)});
     const r=await resp.json();
     if(r.error)showMsg('settings-msg',r.error,'err');
     else showMsg('settings-msg','✅ 設定已儲存','ok');

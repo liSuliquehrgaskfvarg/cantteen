@@ -63,7 +63,7 @@ async function loadOrder(){
   document.getElementById('main-form').innerHTML='';
   document.getElementById('main-form').style.display='none';
   try{
-    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'submitOrder',seatNo:v})});
+    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitOrder',seatNo:v})});
     weekData=await resp.json();
     if(weekData.error){showMsg(weekData.error,'err');return;}
     showMsg('');renderForm();
@@ -103,7 +103,7 @@ async function submitOrder(){
     if(day.dinnerEnabled){const el=document.getElementById(`d${day.key}_dinner`);if(el)choices[day.key].dinner=el.checked;}
   });
   try{
-    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'submitOrder',seatNo:currentSeat,choices})});
+    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitOrder',seatNo:currentSeat,choices})});
     const r=await resp.json();
     if(r.error){showMsg(r.error,'err');btn.disabled=false;btn.textContent='✅ 送出訂餐';}
     else{weekData=r;showMsg(`✅ 座號 ${currentSeat} 訂餐送出成功！`,'ok');renderForm();}
