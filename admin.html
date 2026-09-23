@@ -145,10 +145,7 @@ async function loadData(){
       manualSeats=new Set([...(weekData.submittedSeats||[])]);
       manualSeats.add('teacher');
     }
-    saveManualSeats();
-    renderSummary();
-    startPolling();
-    // Use localStorage if available (overrides API defaults)
+    // Populate settings from localStorage FIRST (so renderSummary reads correct classSize)
     const local=loadLocalSettings();
     const src=local||weekData||{};
     if(src.classSize) document.getElementById('s-classSize').value=src.classSize;
@@ -156,6 +153,9 @@ async function loadData(){
     if(src.deadlineTime) document.getElementById('s-deadlineTime').value=src.deadlineTime;
     if(src.note!==undefined) document.getElementById('s-note').value=src.note;
     settingsSaved=false;
+    saveManualSeats();
+    renderSummary();
+    startPolling();
   }catch(e){showMsg('status-msg','錯誤：'+e.message,'err');console.error(e);}
   finally{document.getElementById('btn-refresh').disabled=false;}
 }
