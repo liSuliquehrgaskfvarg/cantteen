@@ -98,7 +98,7 @@ input:focus,select:focus{border-color:#4f46e5}
 
 <script>
 const API='https://script.google.com/macros/s/AKfycbxbhWetXnvyuxTmmqoNP76PiO-IY17K0-gkEiHYCm7gNJdGhqwP2kuxAkd8VwNrvi2N/exec';
-let weekData=null;
+let weekData=null,settingsSaved=false;
 
 function showMsg(id,html,type=''){
   document.getElementById(id).innerHTML=html?`<div class="status-banner status-${type}">${html}</div>`:'';
@@ -115,11 +115,14 @@ async function loadData(){
     if(weekData.error){showMsg('status-msg',weekData.error,'err');return;}
     showMsg('status-msg','');
     renderSummary();
-    // Populate settings from returned data
-    if(weekData.classSize) document.getElementById('s-classSize').value=weekData.classSize;
-    if(weekData.deadlineWeekday) document.getElementById('s-deadlineWeekday').value=weekData.deadlineWeekday;
-    if(weekData.deadlineTime) document.getElementById('s-deadlineTime').value=weekData.deadlineTime;
-    if(weekData.note) document.getElementById('s-note').value=weekData.note;
+    // Populate settings only if user hasn't just saved
+    if(!settingsSaved){
+      if(weekData.classSize) document.getElementById('s-classSize').value=weekData.classSize;
+      if(weekData.deadlineWeekday) document.getElementById('s-deadlineWeekday').value=weekData.deadlineWeekday;
+      if(weekData.deadlineTime) document.getElementById('s-deadlineTime').value=weekData.deadlineTime;
+      if(weekData.note) document.getElementById('s-note').value=weekData.note;
+    }
+    settingsSaved=false;
   }catch(e){showMsg('status-msg','載入失敗，請檢查網路','err');}
   finally{document.getElementById('btn-refresh').disabled=false;}
 }
@@ -137,13 +140,14 @@ function renderSummary(){
   const sc=d.slotCounts||{};
   const days=d.days||[];
   let tableHtml='<tr><th>日期</th><th>午餐</th><th>晚餐</th></tr>';
+  const submittedCount=submitted.length;
   days.forEach(day=>{
     const c=sc[day.key]||{};
     // slotCounts might be opt-out counts; total - optout = ordering
     // Show as "ordering" count: classSize - optoutCount (if available)
     // For now display raw counts
-    const lunchCount=day.lunchEnabled?(c.lunch!==undefined?c.lunch:'–'):'—';
-    const dinnerCount=day.dinnerEnabled?(c.dinner!==undefined?c.dinner:'–'):'—';
+    const lunchCount=day.lunchEnabled?(submittedCount-(c.lunch||0)):'—';
+    const dinnerCount=day.dinnerEnabled?(submittedCount-(c.dinner||0)):'—';
     tableHtml+=`<tr><td>${day.dateLabel}</td><td>${lunchCount}</td><td>${dinnerCount}</td></tr>`;
   });
   document.getElementById('counts-table').innerHTML=tableHtml;
@@ -165,7 +169,7 @@ async function saveSettings(){
     const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(settings)});
     const r=await resp.json();
     if(r.error)showMsg('settings-msg',r.error,'err');
-    else showMsg('settings-msg','✅ 設定已儲存','ok');
+    else{showMsg('settings-msg','✅ 設定已儲存','ok');settingsSaved=true;}
   }catch(e){showMsg('settings-msg','儲存失敗','err');}
   finally{btn.disabled=false;btn.textContent='💾 儲存設定';}
 }
