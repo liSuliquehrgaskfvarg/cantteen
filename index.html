@@ -84,8 +84,8 @@ function renderForm(){
     const lc=sel[day.key]?.lunch!==false;
     const dc=sel[day.key]?.dinner!==false;
     html+=`<div class="day-block"><div class="day-hdr">${day.dateLabel}</div>`;
-    if(day.lunchEnabled)html+=`<div class="meal-row"><input type="checkbox" class="meal-check" id="d${day.key}_lunch" ${lc&&!isLocked?'checked':''} ${isLocked?'disabled':''}><label class="meal-label" for="d${day.key}_lunch">🌞 午餐</label></div>`;
-    if(day.dinnerEnabled)html+=`<div class="meal-row"><input type="checkbox" class="meal-check" id="d${day.key}_dinner" ${dc&&!isLocked?'checked':''} ${isLocked?'disabled':''}><label class="meal-label" for="d${day.key}_dinner">🌙 晚餐</label></div>`;
+    if(day.lunchEnabled)html+=`<div class="meal-row"><input type="checkbox" class="meal-check" id="d${day.key}_lunch" ${lc&&!isLocked?'checked':''} ${isLocked?'disabled':''}><label class="meal-label" for="d${day.key}_lunch">午餐</label></div>`;
+    if(day.dinnerEnabled)html+=`<div class="meal-row"><input type="checkbox" class="meal-check" id="d${day.key}_dinner" ${dc&&!isLocked?'checked':''} ${isLocked?'disabled':''}><label class="meal-label" for="d${day.key}_dinner">晚餐</label></div>`;
     html+='</div>';
   });
   if(!isLocked)html+=`<button class="btn-submit" id="btn-submit" onclick="submitOrder()">✅ 送出訂餐</button>`;
