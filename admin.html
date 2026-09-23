@@ -62,7 +62,7 @@ input:focus,select:focus{border-color:#4f46e5}
   <div id="settings-msg"></div>
   <div class="form-row">
     <label>班級人數</label>
-    <input type="number" id="s-classSize" placeholder="例：40" min="1" max="60">
+    <input type="number" id="s-classSize" placeholder="例：40" min="1" max="60" oninput="autoSaveLocal(this)">
   </div>
   <div class="form-row">
     <label>伙委 Gmail（自動寄報表用）</label>
@@ -94,6 +94,7 @@ const API='https://script.google.com/macros/s/AKfycbxbhWetXnvyuxTmmqoNP76PiO-IY1
 let weekData=null,settingsSaved=false;
 function saveLocalSettings(s){try{localStorage.setItem('cantteen_settings',JSON.stringify(s));}catch(e){}}
 function loadLocalSettings(){try{const s=localStorage.getItem('cantteen_settings');return s?JSON.parse(s):null;}catch(e){return null;}}
+function autoSaveLocal(el){const cur=loadLocalSettings()||{};cur.classSize=parseInt(el.value)||40;saveLocalSettings(cur);}
 
 function showMsg(id,html,type=''){
   document.getElementById(id).innerHTML=html?`<div class="status-banner status-${type}">${html}</div>`:'';
