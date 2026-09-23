@@ -111,7 +111,7 @@ async function loadData(){
     renderSummary();
     // Use localStorage if available (overrides API defaults)
     const local=loadLocalSettings();
-    const src=local||weekData;
+    const src=local||weekData||{};
     if(src.classSize) document.getElementById('s-classSize').value=src.classSize;
     if(src.deadlineWeekday) document.getElementById('s-deadlineWeekday').value=src.deadlineWeekday;
     if(src.deadlineTime) document.getElementById('s-deadlineTime').value=src.deadlineTime;
