@@ -45,6 +45,7 @@ input:focus,select:focus{border-color:#4f46e5}
   <h1>📋 伙委管理</h1>
   <p class="subtitle">查看本週訂餐狀況</p>
   <button class="btn btn-primary" id="btn-refresh" onclick="loadData()">🔄 載入本週資料</button>
+  <p class="subtitle" id="poll-status" style="margin-top:8px;font-size:.78rem;color:#9ca3af;text-align:center;display:none">⏱ 自動更新中 · 上次更新：<span id="last-update">--</span></p>
 </div>
 <div id="status-msg"></div>
 <div id="summary" style="display:none">
@@ -95,6 +96,25 @@ let weekData=null,settingsSaved=false,manualSeats=new Set();
 function seatsKey(){return 'cantteen_seats_'+((weekData||{}).weekKey||'');}
 function loadManualSeats(){try{const s=localStorage.getItem(seatsKey());return s?new Set(JSON.parse(s)):null;}catch(e){return null;}}
 function saveManualSeats(){try{localStorage.setItem(seatsKey(),JSON.stringify([...manualSeats]));}catch(e){}}
+let pollTimer=null;
+async function pollData(){
+  try{
+    const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitOrder',seatNo:1})});
+    const data=await resp.json();
+    if(data.error)return;
+    weekData=data;
+    let changed=false;
+    (data.submittedSeats||[]).forEach(s=>{if(!manualSeats.has(s)){manualSeats.add(s);changed=true;}});
+    if(changed){saveManualSeats();renderSummary();}
+    const t=new Date();
+    document.getElementById('last-update').textContent=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0')+':'+t.getSeconds().toString().padStart(2,'0');
+  }catch(e){}
+}
+function startPolling(){
+  if(pollTimer)clearInterval(pollTimer);
+  pollTimer=setInterval(pollData,20000);
+  document.getElementById('poll-status').style.display='block';
+}
 function toggleSeat(id){
   if(manualSeats.has(id))manualSeats.delete(id);else manualSeats.add(id);
   saveManualSeats();renderSummary();
@@ -127,6 +147,7 @@ async function loadData(){
     }
     saveManualSeats();
     renderSummary();
+    startPolling();
     // Use localStorage if available (overrides API defaults)
     const local=loadLocalSettings();
     const src=local||weekData||{};
