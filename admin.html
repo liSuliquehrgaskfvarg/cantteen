@@ -58,7 +58,8 @@ input:focus,select:focus{border-color:#4f46e5}
     </div>
   </div>
   <div id="day-grids"></div>
-  <button class="btn btn-primary" id="btn-save-img" onclick="saveAsImage()" style="margin-top:4px">📸 儲存圖片</button>
+  <button class="btn btn-primary" id="btn-save-img" onclick="saveAsImage(false)" style="margin-top:4px">📸 儲存圖片</button>
+  <button class="btn btn-primary" id="btn-snapshot" onclick="saveAsImage(true)" style="margin-top:6px;background:#6b7280;display:none">📂 查看上次紀錄</button>
 </div>
 <div class="card">
   <h2>⚙️ 設定</h2>
@@ -94,16 +95,26 @@ input:focus,select:focus{border-color:#4f46e5}
 
 <script>
 const API='https://script.google.com/macros/s/AKfycbxbhWetXnvyuxTmmqoNP76PiO-IY17K0-gkEiHYCm7gNJdGhqwP2kuxAkd8VwNrvi2N/exec';
-let weekData=null,settingsSaved=false;
+let weekData=null,lastUnlockedData=null,settingsSaved=false;
 let pollTimer=null;
+
+function saveSnapshot(data){try{localStorage.setItem('cantteen_snapshot',JSON.stringify({...data,savedAt:new Date().toISOString()}));}catch(e){}}
+function loadSnapshot(){try{const s=localStorage.getItem('cantteen_snapshot');return s?JSON.parse(s):null;}catch(e){return null;}}
+
 async function pollData(){
   try{
     const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitOrder',seatNo:1})});
     const data=await resp.json();
     if(data.error)return;
+    const wasLocked=weekData?.locked||false;
     const prevSize=(weekData?.submittedSeats||[]).length;
     weekData=data;
+    if(!data.locked){lastUnlockedData=data;saveSnapshot(data);}
     if((data.submittedSeats||[]).length!==prevSize) renderSummary();
+    // Auto-download when deadline just passed
+    if(!wasLocked && data.locked && lastUnlockedData){
+      setTimeout(()=>saveAsImage(true),800);
+    }
     const t=new Date();
     document.getElementById('last-update').textContent=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0')+':'+t.getSeconds().toString().padStart(2,'0');
   }catch(e){}
@@ -138,6 +149,9 @@ async function loadData(){
     if(src.deadlineTime) document.getElementById('s-deadlineTime').value=src.deadlineTime;
     if(src.note!==undefined) document.getElementById('s-note').value=src.note;
     settingsSaved=false;
+    // Restore snapshot (for after-deadline visits)
+    const snap=loadSnapshot();
+    if(snap) lastUnlockedData=snap;
     renderSummary();
     startPolling();
   }catch(e){showMsg('status-msg','錯誤：'+e.message,'err');console.error(e);}
@@ -180,6 +194,11 @@ function renderSummary(){
   });
   document.getElementById('day-grids').innerHTML=html;
   document.getElementById('summary').style.display='block';
+  // Show snapshot button when locked (and snapshot exists), hide save button
+  const saveBtn=document.getElementById('btn-save-img');
+  const snapBtn=document.getElementById('btn-snapshot');
+  if(saveBtn) saveBtn.style.display=isLocked?'none':'block';
+  if(snapBtn) snapBtn.style.display=(isLocked&&lastUnlockedData)?'block':'none';
 }
 
 async function saveSettings(){
@@ -205,23 +224,42 @@ async function saveSettings(){
   finally{btn.disabled=false;btn.textContent='💾 儲存設定';}
 }
 
-async function saveAsImage(){
+async function saveAsImage(useSnapshot=false){
   const btn=document.getElementById('btn-save-img');
-  btn.disabled=true;btn.textContent='產生中…';
+  const snapBtn=document.getElementById('btn-snapshot');
+  const activeBtn=useSnapshot?snapBtn:btn;
+  if(activeBtn){activeBtn.disabled=true;activeBtn.textContent='產生中…';}
   try{
-    // Temporarily hide the save button itself from capture
-    btn.style.display='none';
+    const origData=weekData;
+    // If snapshot mode (after deadline), temporarily render from last unlocked data
+    if(useSnapshot && lastUnlockedData){
+      weekData=lastUnlockedData;
+      renderSummary();
+      weekData=origData;
+    }
+    // Hide both buttons from capture
+    if(btn) btn.style.display='none';
+    if(snapBtn) snapBtn.style.display='none';
     const target=document.getElementById('summary');
     const canvas=await html2canvas(target,{backgroundColor:'#f0f4f8',scale:2,useCORS:true});
-    btn.style.display='';
+    if(btn) btn.style.display='';
+    if(snapBtn) snapBtn.style.display='';
+    // Restore normal render
+    if(useSnapshot && lastUnlockedData) renderSummary();
     const a=document.createElement('a');
-    const today=new Date();
-    const dateStr=today.getFullYear()+''+String(today.getMonth()+1).padStart(2,'0')+''+String(today.getDate()).padStart(2,'0');
+    const d=useSnapshot&&lastUnlockedData?new Date(lastUnlockedData.savedAt||Date.now()):new Date();
+    const dateStr=d.getFullYear()+''+String(d.getMonth()+1).padStart(2,'0')+''+String(d.getDate()).padStart(2,'0');
     a.download='訂餐_'+dateStr+'.png';
     a.href=canvas.toDataURL('image/png');
     a.click();
-  }catch(e){btn.style.display='';alert('無法儲存圖片：'+e.message);}
-  finally{btn.disabled=false;btn.textContent='📸 儲存圖片';}
+  }catch(e){
+    if(btn){btn.style.display='';}
+    if(snapBtn){snapBtn.style.display='';}
+    alert('無法儲存圖片：'+e.message);
+  }
+  finally{
+    if(activeBtn){activeBtn.disabled=false;activeBtn.textContent=useSnapshot?'📂 查看上次紀錄':'📸 儲存圖片';}
+  }
 }
 
 loadData();
