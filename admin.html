@@ -92,6 +92,8 @@ input:focus,select:focus{border-color:#4f46e5}
 <script>
 const API='https://script.google.com/macros/s/AKfycbxbhWetXnvyuxTmmqoNP76PiO-IY17K0-gkEiHYCm7gNJdGhqwP2kuxAkd8VwNrvi2N/exec';
 let weekData=null,settingsSaved=false;
+function saveLocalSettings(s){try{localStorage.setItem('cantteen_settings',JSON.stringify(s));}catch(e){}}
+function loadLocalSettings(){try{const s=localStorage.getItem('cantteen_settings');return s?JSON.parse(s):null;}catch(e){return null;}}
 
 function showMsg(id,html,type=''){
   document.getElementById(id).innerHTML=html?`<div class="status-banner status-${type}">${html}</div>`:'';
@@ -107,12 +109,13 @@ async function loadData(){
     if(weekData.error){showMsg('status-msg',weekData.error,'err');return;}
     showMsg('status-msg','');
     renderSummary();
-    if(!settingsSaved){
-      if(weekData.classSize) document.getElementById('s-classSize').value=weekData.classSize;
-      if(weekData.deadlineWeekday) document.getElementById('s-deadlineWeekday').value=weekData.deadlineWeekday;
-      if(weekData.deadlineTime) document.getElementById('s-deadlineTime').value=weekData.deadlineTime;
-      if(weekData.note) document.getElementById('s-note').value=weekData.note;
-    }
+    // Use localStorage if available (overrides API defaults)
+    const local=loadLocalSettings();
+    const src=local||weekData;
+    if(src.classSize) document.getElementById('s-classSize').value=src.classSize;
+    if(src.deadlineWeekday) document.getElementById('s-deadlineWeekday').value=src.deadlineWeekday;
+    if(src.deadlineTime) document.getElementById('s-deadlineTime').value=src.deadlineTime;
+    if(src.note!==undefined) document.getElementById('s-note').value=src.note;
     settingsSaved=false;
   }catch(e){showMsg('status-msg','載入失敗，請檢查網路','err');}
   finally{document.getElementById('btn-refresh').disabled=false;}
@@ -172,7 +175,7 @@ async function saveSettings(){
     const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(settings)});
     const r=await resp.json();
     if(r.error)showMsg('settings-msg',r.error,'err');
-    else{showMsg('settings-msg','✅ 設定已儲存','ok');settingsSaved=true;}
+    else{showMsg('settings-msg','✅ 設定已儲存','ok');settingsSaved=true;saveLocalSettings(settings);}
   }catch(e){showMsg('settings-msg','儲存失敗','err');}
   finally{btn.disabled=false;btn.textContent='💾 儲存設定';}
 }
