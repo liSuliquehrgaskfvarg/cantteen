@@ -6,11 +6,11 @@
 <title>伙委管理</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;padding:16px}
-.card{background:#fff;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-h1{font-size:1.4rem;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;padding:12px}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+h1{font-size:1.3rem;font-weight:700;color:#1a1a2e;margin-bottom:4px}
 h2{font-size:1rem;font-weight:700;color:#374151;margin-bottom:12px}
-.subtitle{font-size:.85rem;color:#6b7280}
+.subtitle{font-size:.82rem;color:#6b7280}
 .btn{padding:10px 20px;border-radius:10px;border:none;font-size:.95rem;font-weight:700;cursor:pointer;transition:.15s}
 .btn-primary{background:#4f46e5;color:#fff;width:100%;padding:12px;margin-top:8px}
 .btn-primary:hover{background:#4338ca}
@@ -19,15 +19,16 @@ h2{font-size:1rem;font-weight:700;color:#374151;margin-bottom:12px}
 .stat-box{background:#f9fafb;border-radius:10px;padding:14px;text-align:center}
 .stat-num{font-size:1.8rem;font-weight:800;color:#4f46e5}
 .stat-label{font-size:.75rem;color:#6b7280;margin-top:2px}
-.seat-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.seat-tag{display:inline-block;padding:4px 10px;border-radius:8px;font-size:.8rem;font-weight:700}
-.seat-ok{background:#d1fae5;color:#065f46}
-.seat-missing{background:#fee2e2;color:#991b1b}
-.table-wrap{overflow-x:auto;margin-top:10px}
-table{width:100%;border-collapse:collapse;font-size:.85rem}
-th,td{padding:8px 10px;text-align:center;border:1px solid #e5e7eb}
-th{background:#f3f4f6;font-weight:700;color:#374151}
-td{color:#4b5563}
+/* Day section */
+.day-section{margin-bottom:12px;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.day-hdr{background:#dbeafe;padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
+.day-hdr-title{color:#1e40af;font-weight:700;font-size:.9rem}
+.day-hdr-count{font-size:.78rem;color:#3b82f6;font-weight:600}
+.day-grid{padding:10px 10px 12px;display:flex;flex-wrap:wrap;gap:5px}
+.seat{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;font-size:.78rem;font-weight:700;border:1.5px solid #e5e7eb;color:#6b7280;background:#f9fafb}
+.seat.ordered{background:#f97316;border-color:#ea6c00;color:#fff}
+.day-closed{padding:10px 14px;font-size:.82rem;color:#9ca3af;font-style:italic}
+/* Settings */
 .form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 label{font-size:.8rem;font-weight:600;color:#374151}
 input,select{padding:8px 12px;border:2px solid #e5e7eb;border-radius:8px;font-size:.9rem;outline:none}
@@ -36,7 +37,7 @@ input:focus,select:focus{border-color:#4f46e5}
 .status-ok{background:#d1fae5;color:#065f46}
 .status-err{background:#fee2e2;color:#991b1b}
 .status-warn{background:#fef3c7;color:#92400e}
-.section-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;font-weight:700;margin-bottom:10px}
+.section-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;font-weight:700;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -53,16 +54,8 @@ input:focus,select:focus{border-color:#4f46e5}
       <div class="stat-box"><div class="stat-num" id="count-submitted">–</div><div class="stat-label">已填</div></div>
       <div class="stat-box"><div class="stat-num" id="count-missing">–</div><div class="stat-label">未填</div></div>
     </div>
-    <p style="font-size:.8rem;font-weight:700;color:#374151;margin-bottom:6px">✅ 已填</p>
-    <div class="seat-list" id="seats-ok"></div>
-    <p style="font-size:.8rem;font-weight:700;color:#374151;margin:12px 0 6px">❌ 未填</p>
-    <div class="seat-list" id="seats-missing"></div>
   </div>
-  <div class="card">
-    <p class="section-title">各日統計（已訂人數）</p>
-    <div class="table-wrap"><table id="counts-table"></table></div>
-    <p style="font-size:.7rem;color:#9ca3af;margin-top:8px">※ 顯示選擇訂餐的人數</p>
-  </div>
+  <div id="day-grids"></div>
 </div>
 <div class="card">
   <h2>⚙️ 設定</h2>
@@ -109,13 +102,11 @@ async function loadData(){
   showMsg('status-msg','載入中…','warn');
   document.getElementById('summary').style.display='none';
   try{
-    // Load with seatNo=1 to get week-level aggregate data
     const resp=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'submitOrder',seatNo:1})});
     weekData=await resp.json();
     if(weekData.error){showMsg('status-msg',weekData.error,'err');return;}
     showMsg('status-msg','');
     renderSummary();
-    // Populate settings only if user hasn't just saved
     if(!settingsSaved){
       if(weekData.classSize) document.getElementById('s-classSize').value=weekData.classSize;
       if(weekData.deadlineWeekday) document.getElementById('s-deadlineWeekday').value=weekData.deadlineWeekday;
@@ -129,28 +120,40 @@ async function loadData(){
 
 function renderSummary(){
   const d=weekData;
-  const submitted=d.submittedSeats||[];
+  const submitted=new Set(d.submittedSeats||[]);
   const missing=d.notSubmitted||[];
-  document.getElementById('count-submitted').textContent=submitted.length;
+  const classSize=d.classSize||40;
+  document.getElementById('count-submitted').textContent=submitted.size;
   document.getElementById('count-missing').textContent=missing.length;
-  document.getElementById('seats-ok').innerHTML=submitted.map(s=>`<span class="seat-tag seat-ok">${s}</span>`).join('')||'<span style="color:#9ca3af;font-size:.8rem">（無）</span>';
-  document.getElementById('seats-missing').innerHTML=missing.map(s=>`<span class="seat-tag seat-missing">${s}</span>`).join('')||'<span style="color:#9ca3af;font-size:.8rem">（全部已填）</span>';
 
-  // Counts table
-  const sc=d.slotCounts||{};
+  // Build per-day grids
   const days=d.days||[];
-  let tableHtml='<tr><th>日期</th><th>午餐</th><th>晚餐</th></tr>';
-  const submittedCount=submitted.length;
+  let html='';
   days.forEach(day=>{
-    const c=sc[day.key]||{};
-    // slotCounts might be opt-out counts; total - optout = ordering
-    // Show as "ordering" count: classSize - optoutCount (if available)
-    // For now display raw counts
-    const lunchCount=day.lunchEnabled?(submittedCount-(c.lunch||0)):'—';
-    const dinnerCount=day.dinnerEnabled?(submittedCount-(c.dinner||0)):'—';
-    tableHtml+=`<tr><td>${day.dateLabel}</td><td>${lunchCount}</td><td>${dinnerCount}</td></tr>`;
+    const isLocked=(d.locked)||false;
+    const dayLocked=isLocked; // could refine per-day if API provides
+    const orderedCount=submitted.size;
+
+    html+=`<div class="day-section">`;
+    html+=`<div class="day-hdr"><span class="day-hdr-title">📅 ${day.dateLabel}</span>`;
+    if(!dayLocked) html+=`<span class="day-hdr-count">🟠 ${orderedCount} 人</span>`;
+    html+=`</div>`;
+
+    if(!day.lunchEnabled && !day.dinnerEnabled){
+      html+=`<div class="day-closed">⛔ 本日不供餐</div>`;
+    } else if(dayLocked){
+      html+=`<div class="day-closed">🔒 點餐已截止</div>`;
+    } else {
+      html+=`<div class="day-grid">`;
+      for(let s=1;s<=classSize;s++){
+        const isOrdered=submitted.has(s);
+        html+=`<div class="seat${isOrdered?' ordered':''}">${String(s).padStart(2,'0')}</div>`;
+      }
+      html+=`</div>`;
+    }
+    html+=`</div>`;
   });
-  document.getElementById('counts-table').innerHTML=tableHtml;
+  document.getElementById('day-grids').innerHTML=html;
   document.getElementById('summary').style.display='block';
 }
 
@@ -174,7 +177,6 @@ async function saveSettings(){
   finally{btn.disabled=false;btn.textContent='💾 儲存設定';}
 }
 
-// Auto-load on open
 loadData();
 </script>
 </body>
